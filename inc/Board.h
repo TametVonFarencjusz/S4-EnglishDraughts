@@ -62,39 +62,6 @@ public:
 				set(i, j, board2.getSafe(i, j));
 	}	
 	
-	//Wyswietlenie planszy w konsoli
-	void print(bool all = false) const{
-		for (int j = 7; j >= 0; j--)
-		{
-			for (int i = 0; i < 8; i++)
-			{
-				if (i == 0) std::cout << j << "|";
-				switch(getSafe(i,j))
-				{
-					case white: 	std::cout << "O"; break;
-					case whiteKing: std::cout << "@"; break;
-					case black: 	std::cout << "X"; break;
-					case blackKing: std::cout << "Y"; break;
-					case empty: 	std::cout << "_"; break;
-					case outOfPlay: std::cout << " "; break;
-					default: std::cout << "E"; break;
-				}
-			}
-			std::cout << std::endl;
-		}
-		std::cout << "  "; for (int i = 0; i < 8; i++) std::cout << "-"; 	std::cout << std::endl;
-		std::cout << "  "; for (int i = 0; i < 8; i++) std::cout << i;		std::cout << std::endl;
-		
-		if (all)
-		{
-			if (whiteTurn) std::cout << "White's turn" << std::endl;
-			else std::cout << "Black's turn" << std::endl;
-			
-			std::cout << "Count of legal moves: " << countOfLegalMoves() << std::endl;
-			if (canCapture()) std::cout << "You have to capture!"  << std::endl;
-		}
-	}
-	
 	//Zwrocenie wartosci na danym poly w bezpieczny sposob, aby nie wyjsc poza tablice przypadkiem
 	field getSafe(int x, int y) const{
 		if (x < 0 || x > 7) return outOfBounds;
@@ -185,34 +152,11 @@ public:
 	//sprawdzanie czy dane bicie jest legalne
 	bool legalCapture(int x1, int y1, int x2, int y2) const{
 		if (getSafe(x1,y1) == white || getSafe(x1,y1) == black)
-			if (getSafe(x2,y2) == empty && abs(x2-x1) == 2 && y2-y1 == 2*direction() && isEnemy(x1+sign(x2-x1),y1+sign(y2-y1))) return true;
-			else return false;
+			return (getSafe(x2,y2) == empty && abs(x2-x1) == 2 && y2-y1 == 2*direction() && isEnemy(x1+sign(x2-x1),y1+sign(y2-y1)));
 		//Damka
 		else if (getSafe(x1,y1) == whiteKing || getSafe(x1,y1) == blackKing)
-			if (getSafe(x2,y2) == empty && abs(x2-x1) == 2 && abs(y2-y1) == 2 && isEnemy(x1+sign(x2-x1),y1+sign(y2-y1))) return true;
-			else return false;
+			return (getSafe(x2,y2) == empty && abs(x2-x1) == 2 && abs(y2-y1) == 2 && isEnemy(x1+sign(x2-x1),y1+sign(y2-y1)));
 		return false;
-	}
-	
-	//zliczenie mozliwych bic prze bierke
-	int countCaptures(int x, int y) const{
-		int counter = 0;
-		//Damka
-		if (getSafe(x,y) == whiteKing || getSafe(x,y) == blackKing){
-			for (int i = -1; i <= 1; i+=2){
-				for (int j = -1; j <= 1; j+=2){
-					if (isEnemy(x+i, y+j) && getSafe(x+i*2,y+j*2) == empty) counter++;
-				}
-			}
-		}
-		//Pion
-		else if (getSafe(x,y) == white || getSafe(x,y) == black){
-			for (int i = -1; i <= 1; i+=2){
-				if (isEnemy(x+i, y+direction()) && getSafe(x+i*2,y+direction()*2) == empty) counter++;
-			}
-		}
-		
-		return counter;
 	}
 	
 	//sprawdzanie czy mozliwe jest przesuniecie bierki wraz ze sprawdzeniem czy jest bicie
@@ -259,14 +203,55 @@ public:
 	bool legalStep(int x1, int y1, int x2, int y2) const
 	{
 		if (getSafe(x1,y1) == white || getSafe(x1,y1) == black)
-			if (getSafe(x2,y2) == empty && abs(x2-x1) == 1 && y2-y1 == direction()) return true;
-			else return false;
+			return getSafe(x2,y2) == empty && abs(x2-x1) == 1 && y2-y1 == direction();
 		//Damka
 		else if (getSafe(x1,y1) == whiteKing || getSafe(x1,y1) == blackKing)
-			if (getSafe(x2,y2) == empty && abs(x2-x1) == 1 && abs(y2-y1) == 1) return true;
-			else return false;
+			return (getSafe(x2,y2) == empty && abs(x2-x1) == 1 && abs(y2-y1) == 1);
 		return false;
 	}
+	
+	//wykonanie ruchu
+	bool move(int x1, int y1, int x2, int y2)
+	{
+		if (abs(x2-x1) == 2){
+			if (legalCapture(x1, y1, x2, y2)){
+			if (getSafe(x1,y1) == white || getSafe(x1,y1) == black) draw = 0;
+			set(x2,y2,getSafe(x1,y1));
+			set(x1,y1,empty);
+			set(x1+sign(x2-x1),y1+sign(y2-y1),empty);
+			
+			} else return false;
+		}
+		else if (legalStep(x1, y1, x2, y2) && !canCapture()){
+			set(x2,y2,getSafe(x1,y1));
+			set(x1,y1,empty);
+			draw = 0;
+		}
+		else return false;
+
+		return true;
+	}
+	
+	//sprawdzenie czy nie ma promocji
+	void checkPromotion(){
+		for (int i = 1; i < 8; i += 2) 
+		if (getSafe(i,7) == white) set(i,7,whiteKing); 
+		
+		for (int i = 0; i < 8; i += 2) 
+		if (getSafe(i,0) == black) set(i,0,blackKing); 
+	}
+	//sprawdzenie czy nie ma remisu
+	bool isDraw() const{
+		return draw >= 40;
+	}
+	//sprawdzenie czy nie ma konca gry
+	bool end() const{
+		if (isDraw()) return true;
+		if (canStep() || canCapture()) return false;
+		return true;
+	}
+	
+	//****Metody do testowania****//
 	//policzenie mozliwych ruchow
 	int countSteps(int x, int y) const{
 		int counter = 0;
@@ -285,43 +270,28 @@ public:
 				}
 		return counter;
 	}
-	//wykonanie ruchu
-	bool move(int x1, int y1, int x2, int y2)
-	{
-		if (getSafe(x2,y2) != empty) return false;
 	
-		if (getSafe(x1,y1) == white || getSafe(x1,y1) == black){
-			//normalny ruch
-			if (abs(x2-x1) == 1 && y2-y1 == direction() && canStepSafe(x1,y1)){
-				set(x1,y1,empty);
-				set(x2,y2,whiteTurn?white:black);
-				draw = 0;
+	//zliczenie mozliwych bic prze bierke
+	int countCaptures(int x, int y) const{
+		int counter = 0;
+		//Damka
+		if (getSafe(x,y) == whiteKing || getSafe(x,y) == blackKing){
+			for (int i = -1; i <= 1; i+=2){
+				for (int j = -1; j <= 1; j+=2){
+					if (isEnemy(x+i, y+j) && getSafe(x+i*2,y+j*2) == empty) counter++;
+				}
 			}
-			//bicie
-			else if (abs(x2-x1) == 2 && y2-y1 == 2*direction() && isEnemy(x1+sign(x2-x1), y1+sign(y2-y1)))
-			{
-				set(x1,y1,empty);
-				set(x1+sign(x2-x1),y1+sign(y2-y1),empty);
-				set(x2,y2,whiteTurn?white:black);
-				draw = 0;
-			} else return false;
-		} else if (getSafe(x1,y1) == whiteKing || getSafe(x1,y1) == blackKing){
-			//normalny ruch
-			if (abs(x2-x1) == 1 && abs(y2-y1) == 1 && canStepSafe(x1,y1)){
-				set(x1,y1,empty);
-				set(x2,y2,whiteTurn?whiteKing:blackKing);
-				draw++;
+		}
+		//Pion
+		else if (getSafe(x,y) == white || getSafe(x,y) == black){
+			for (int i = -1; i <= 1; i+=2){
+				if (isEnemy(x+i, y+direction()) && getSafe(x+i*2,y+direction()*2) == empty) counter++;
 			}
-			//bicie
-			else if (abs(x2-x1) == 2 && abs(y2-y1) == 2 && isEnemy(x1+sign(x2-x1), y1+sign(y2-y1))){
-				set(x1,y1,empty);
-				set(x1+sign(x2-x1),y1+sign(y2-y1),empty);
-				set(x2,y2,whiteTurn?whiteKing:blackKing);
-				draw = 0;
-			} else return false;
-		} else false;
-		return true;
+		}
+		
+		return counter;
 	}
+	
 	//ilosc legalnych ruchow
 	int countOfLegalMoves() const{
 		int counter = 0;
@@ -344,23 +314,38 @@ public:
 		}
 		return counter;
 	}
-	//sprawdzenie czy nie ma promocji
-	void checkPromotion(){
-		for (int i = 1; i < 8; i += 2) 
-		if (getSafe(i,7) == white) set(i,7,whiteKing); 
+	
+	//Wyswietlenie planszy w konsoli
+	void print(bool all = false) const{
+		for (int j = 7; j >= 0; j--)
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				if (i == 0) std::cout << j << "|";
+				switch(getSafe(i,j))
+				{
+					case white: 	std::cout << "O"; break;
+					case whiteKing: std::cout << "@"; break;
+					case black: 	std::cout << "X"; break;
+					case blackKing: std::cout << "Y"; break;
+					case empty: 	std::cout << "_"; break;
+					case outOfPlay: std::cout << " "; break;
+					default: std::cout << "E"; break;
+				}
+			}
+			std::cout << std::endl;
+		}
+		std::cout << "  "; for (int i = 0; i < 8; i++) std::cout << "-"; 	std::cout << std::endl;
+		std::cout << "  "; for (int i = 0; i < 8; i++) std::cout << i;		std::cout << std::endl;
 		
-		for (int i = 0; i < 8; i += 2) 
-		if (getSafe(i,0) == black) set(i,0,blackKing); 
-	}
-	//sprawdzenie czy nie ma remisu
-	bool isDraw() const{
-		return draw >= 40;
-	}
-	//sprawdzenie czy nie ma konca gry
-	bool end() const{
-		if (isDraw()) return true;
-		if (canStep() || canCapture()) return false;
-		return true;
+		if (all)
+		{
+			if (whiteTurn) std::cout << "White's turn" << std::endl;
+			else std::cout << "Black's turn" << std::endl;
+			
+			std::cout << "Count of legal moves: " << countOfLegalMoves() << std::endl;
+			if (canCapture()) std::cout << "You have to capture!"  << std::endl;
+		}
 	}
 };
 

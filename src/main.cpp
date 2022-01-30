@@ -6,6 +6,7 @@
 
 #include "../inc/Board.h"
 #include "../inc/AI.h"
+#include "../inc/Graphics.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -13,48 +14,32 @@ enum State{
 	start, play, end
 };
 
-sf::Image icon;
-sf::Texture textureBoard, textureBoard2, textureWhite, textureWhiteKing, textureBlack, textureBlackKing, textureMark, textureMove, textureButton1, textureButton2, textureButton3;
+
+//sf::Texture textureBoard, textureBoard2, textureWhite, textureWhiteKing, textureBlack, textureBlackKing, textureMark, textureMove, textureButton1, textureButton2, textureButton3;
+Graphics gfx;
 sf::Font font; 																		//Tworzenie obiektu czcionki
 sf::RenderWindow window(sf::VideoMode(800, 800), "Checkers by Szymon Startek"); 	//Utworzenie obiektu okna o wymiarach 800x800
 int mouseTileX1 = -1, mouseTileY1 = -1, mouseTileX2 = -1, mouseTileY2 = -1;
-
-bool loadTextures(){
-	bool flagLoad = false;
-	flagLoad = textureBoard.loadFromFile("sprites/Board.png", sf::IntRect(0, 0, 800, 800));		if (!flagLoad) return false;
-	flagLoad = textureBoard2.loadFromFile("sprites/Board2.png", sf::IntRect(0, 0, 800, 800));	if (!flagLoad) return false;
-	flagLoad = textureWhite.loadFromFile("sprites/White.png");									if (!flagLoad) return false;
-	flagLoad = textureWhiteKing.loadFromFile("sprites/WhiteKing.png");							if (!flagLoad) return false;
-	flagLoad = textureBlack.loadFromFile("sprites/Black.png");									if (!flagLoad) return false;
-	flagLoad = textureBlackKing.loadFromFile("sprites/BlackKing.png");							if (!flagLoad) return false;
-	flagLoad = textureMark.loadFromFile("sprites/Mark.png"); 									if (!flagLoad) return false;
-	flagLoad = textureMove.loadFromFile("sprites/Move.png");									if (!flagLoad) return false;
-	flagLoad = textureButton1.loadFromFile("sprites/Button1.png");								if (!flagLoad) return false;
-	flagLoad = textureButton2.loadFromFile("sprites/Button2.png");								if (!flagLoad) return false;
-	flagLoad = textureButton3.loadFromFile("sprites/Button3.png");								if (!flagLoad) return false;
-	flagLoad = icon.loadFromFile("sprites/Icon.png");											if (!flagLoad) return false;
-	return true;
-}
 
 int drawStart(const Board & board){
 	//************************//
 	window.clear();	//Wyczyszczenie okna "window" ze wszystkich obiektów, aby móc narysowane nowe metodą "draw"	
 	//************************//
 	sf::Sprite sprite;
-	sprite.setTexture(textureBoard2); 	
+	sprite.setTexture(gfx.textureBoard2); 	
 	sprite.setPosition(sf::Vector2f(0,0)); 
 	window.draw(sprite);
 	
 	sf::Sprite sprite2;
-	sprite2.setTexture(textureButton1); 
+	sprite2.setTexture(gfx.textureButton1); 
 	sprite2.setPosition(sf::Vector2f(300,100)); 
 	window.draw(sprite2);
 	
-	sprite2.setTexture(textureButton2); 
+	sprite2.setTexture(gfx.textureButton2); 
 	sprite2.setPosition(sf::Vector2f(300,300)); 
 	window.draw(sprite2);
 
-	sprite2.setTexture(textureButton3); 
+	sprite2.setTexture(gfx.textureButton3); 
 	sprite2.setPosition(sf::Vector2f(300,500)); 
 	window.draw(sprite2);
 	
@@ -96,7 +81,7 @@ void drawBoard(const Board & board){
 	window.clear();	//Wyczyszczenie okna "window" ze wszystkich obiektów, aby móc narysowane nowe metodą "draw"	
 	//************************//
 	sf::Sprite sprite;
-	sprite.setTexture(textureBoard); 	
+	sprite.setTexture(gfx.textureBoard); 	
 	sprite.setPosition(sf::Vector2f(0,0)); 
 	window.draw(sprite);
 	
@@ -104,17 +89,17 @@ void drawBoard(const Board & board){
 	for (int j = 7; j >= 0; j--){
 		for (int i = 0; i < 8; i++){
 			switch(board.getSafe(i,j)){
-				case white: 	sprite2.setTexture(textureWhite); 		sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
-				case whiteKing: sprite2.setTexture(textureWhiteKing); 	sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
-				case black: 	sprite2.setTexture(textureBlack); 		sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
-				case blackKing: sprite2.setTexture(textureBlackKing); 	sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
+				case white: 	sprite2.setTexture(gfx.textureWhite); 		sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
+				case whiteKing: sprite2.setTexture(gfx.textureWhiteKing); 	sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
+				case black: 	sprite2.setTexture(gfx.textureBlack); 		sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
+				case blackKing: sprite2.setTexture(gfx.textureBlackKing); 	sprite2.setPosition(sf::Vector2f(i*100,700-j*100)); window.draw(sprite2); break;
 			}
 		}
 	}
 	
 	sf::Sprite sprite3;
 	if (mouseTileX1 != -1 && mouseTileY1 != -1){
-		sprite3.setTexture(textureMark); 		
+		sprite3.setTexture(gfx.textureMark); 		
 		sprite3.setPosition(sf::Vector2f(mouseTileX1*100,700-mouseTileY1*100)); 
 		window.draw(sprite3);
 	}
@@ -130,13 +115,12 @@ int main()
     int depthAI = -1;
     State state = start;
     StarTech * ptrAI;
-    //StarTech ai2(5, true);
 	
-	if (!loadTextures()){
+	if (!gfx.LoadTextures(1)){
 		std::cout << "ERROR: Texture not loaded\n";
 		return -1;
 	}
-	window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());	//Ustawianie wczytanego obrazu jako ikona okna
+	window.setIcon(gfx.icon.getSize().x, gfx.icon.getSize().y, gfx.icon.getPixelsPtr());	//Ustawianie wczytanego obrazu jako ikona okna
 	
 	if (!font.loadFromFile("font/arial.ttf")){ 	//Wczytywanie czcionki "arial.tff" z pliku
 		std::cerr << "ERROR: Font not found" << std::endl; 	//Błąd przy wczytywaniu pliku: Brak pliku z czcionką
